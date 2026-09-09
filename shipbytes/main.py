@@ -32,6 +32,10 @@ def create_app(config=None, mailer=None):
     signer = URLSafeTimedSerializer(config.secret_key)
     templates = Jinja2Templates(directory=str(ROOT / 'templates'))
     templates.env.autoescape = select_autoescape(['html', 'xml'])
+    from .media import media_root
+    media_directory = media_root(config)
+    media_directory.mkdir(parents=True, exist_ok=True)
+    app.mount('/media', StaticFiles(directory=media_directory), name='media')
     app.mount('/static', StaticFiles(directory=ROOT / 'static'), name='static')
 
     @app.middleware('http')

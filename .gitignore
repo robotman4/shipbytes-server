@@ -8,3 +8,5 @@ __pycache__/
 dev-emails/
 backups/
 *.tar.gz
+
+media/

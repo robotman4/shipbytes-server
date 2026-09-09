@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     email_backend: Literal['development', 'resend'] = 'development'
     environment: Literal['development', 'production'] = 'development'
     email_directory: str = './dev-emails'
+    media_directory: str = ''
     resend_api_key: str = ''
     resend_from_email: str = ''
     resend_from_name: str = 'Ship Bytes'

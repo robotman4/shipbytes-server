@@ -112,3 +112,32 @@ Use either cron or the timer, not both. The timer does not catch up missed runs 
 Run `make test`. Tests block external networking and mock Resend. Coverage includes malformed and unsupported input, duplicate slugs, future issues, source validation, chronological order, successful import/publication, idempotency, concurrent publishers, safe retries, uncertain failures, rendering failure and the shell script's exact one-retry behavior. Fake `sleep` verifies a 3,600-second wait without delaying the suite.
 
 Do not create a fake production issue to test the timer. An empty content checkout is a valid successful scan with zero publications. Use a real reviewed issue when the publication is ready to send.
+
+## Optional issue image
+
+Version 1 now accepts an optional `image` object; existing issue files remain valid. Commit the image and issue JSON together:
+
+```text
+issues/2026/2026-09-15.json
+assets/2026/2026-09-15/cover.jpg
+```
+
+```json
+"image": {
+  "path": "assets/2026/2026-09-15/cover.jpg",
+  "alt": "A factual description of the image",
+  "credit": "Photographer or image provider",
+  "source_url": "https://example.com/media",
+  "usage": "Permission or licence reference"
+}
+```
+
+`path` and `alt` are required when `image` is present. Paths are relative to the repository root and must stay under `assets/`. Credit, original source URL and usage notes are optional metadata; include them for externally sourced images. Image selection and permission checks belong to content preparation. Publishing does not fetch remote images or generate illustrations.
+
+The importer accepts nonanimated JPEG, PNG and WebP images up to 4 MB and 4 million pixels. It fits them within a white 1200 × 630 cover without cropping, creates a 600 × 315 thumbnail, and saves compressed JPEGs up to 250 KB each. Embedded source metadata is omitted from the rendered files. Files are stored atomically under content-derived names in `/data/media`, independent of subsequent Git resets, with attribution stored in SQLite. Existing published issues and existing Broadcasts are never changed by editing Git assets.
+
+Missing, unreadable, corrupt, animated, oversized or symlinked optional images produce a logged warning and use the Ship Bytes default. Invalid image metadata (such as path traversal or a malformed source URL) remains a schema validation error. Storage failures stop publication. Images remain optional, including for API-created issues, which currently use the default.
+
+The supplied logo/default cover is preserved unchanged at `shipbytes/static/brand/shipbytes-default.jpg`, served at `/static/brand/shipbytes-default.jpg`. It also appears in the site header. Custom issue covers appear on the homepage, archive, issue page, social sharing metadata and future HTML newsletters. The plain-text newsletter stays text-only.
+
+The media directory defaults to `media` beside the SQLite database, so production uses the existing `/data` volume. `MEDIA_DIRECTORY` can override this for development. Include `/data/media` in backups and restore it alongside SQLite; Git alone is not a backup of historically published media.

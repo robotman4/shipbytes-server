@@ -27,6 +27,26 @@ class Issue(Timestamps, Base):
     status: Mapped[str] = mapped_column(default='draft', index=True)
     published_at: Mapped[datetime | None]
     resend_broadcast_id: Mapped[str | None]
+    image_file: Mapped[str | None]
+    image_thumbnail: Mapped[str | None]
+    image_alt: Mapped[str | None]
+    image_credit: Mapped[str | None]
+    image_source_url: Mapped[str | None]
+    image_usage: Mapped[str | None]
+
+    @property
+    def cover_url(self):
+        from .media import DEFAULT_IMAGE
+        return self.image_file or DEFAULT_IMAGE
+
+    @property
+    def thumbnail_url(self):
+        return self.image_thumbnail or self.cover_url
+
+    @property
+    def cover_alt(self):
+        return self.image_alt if self.image_file else 'Ship Bytes maritime technology logo'
+
     source_filename: Mapped[str | None]
     source_git_sha: Mapped[str | None]
     source_content_hash: Mapped[str | None]

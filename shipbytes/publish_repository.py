@@ -11,6 +11,7 @@ from sqlalchemy import select
 from .config import settings
 from .db import database
 from .mail import Mailer
+from .media import store_image
 from .models import Issue, Story
 from .publication_schema import RepositoryIssue
 from .publishing import publication_lock, publish_locked
@@ -121,6 +122,18 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
                     issue.source_git_sha = sha
                     issue.source_content_hash = digest
                     issue.publication_date = datetime.combine(content.published_date, time())
+                    for field in ('image_file', 'image_thumbnail', 'image_alt', 'image_credit', 'image_source_url', 'image_usage'):
+                        setattr(issue, field, None)
+                    if content.image:
+                        stored = store_image(root, content.image, config)
+                        if stored:
+                            issue.image_file, issue.image_thumbnail = stored
+                            issue.image_alt = content.image.alt
+                            issue.image_credit = content.image.credit
+                            issue.image_source_url = str(content.image.source_url)
+                            issue.image_usage = content.image.usage
+                        else:
+                            log(f'issue {content.slug}: optional image unavailable or invalid; using Ship Bytes default')
                 db.commit()
             log(f'publishing issue {content.slug}')
             result = publish_locked(sessions, config, mailer, content.slug)

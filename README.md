@@ -149,7 +149,7 @@ cd /home/ubuntu/docker/shipbytes
 bash scripts/backup.sh
 ```
 
-The script uses Python's SQLite online backup API and writes a timestamped private file in `backups/`. Copy backups to separate storage; schedule the script with cron and choose a retention policy. Backups contain personal data. No data volume is removed during deployment.
+The script uses Python's SQLite online backup API and writes a timestamped private database file and a matching `.db.media.tar.gz` media archive in `backups/`. Restore both together. Copy backups to separate storage; schedule the script with cron and choose a retention policy. Backups contain personal data. No data volume is removed during deployment.
 
 To restore, stop the application, retain the current database as a backup, then restore a chosen SQLite backup into the volume. Example after copying the backup to `backups/restore.db`:
 
@@ -160,6 +160,19 @@ docker compose --env-file .env --env-file .release.env run --rm -T --no-deps --u
   'import os, sqlite3; src=sqlite3.connect("file:/backups/restore.db?mode=ro", uri=True); dst=sqlite3.connect("/data/shipbytes.db"); src.backup(dst); dst.close(); src.close(); os.chown("/data/shipbytes.db", 10001, 10001)'
 docker compose --env-file .env --env-file .release.env run --rm app python -m alembic upgrade head
 # Reconcile external Broadcast history and current Resend subscription preferences before publishing.
+```
+
+For the matching media archive, copy it to `backups/restore.media.tar.gz` and, while the app is still stopped, run:
+
+```sh
+docker compose --env-file .env --env-file .release.env run --rm -T --no-deps --user 0 \
+  -v "$PWD/backups:/backups:ro" app python -c \
+  'import os, pathlib, tarfile; archive=tarfile.open("/backups/restore.media.tar.gz"); archive.extractall("/data", filter="data"); archive.close(); paths=[pathlib.Path("/data/media"), *pathlib.Path("/data/media").rglob("*")]; [os.chown(p, 10001, 10001) for p in paths if p.exists()]'
+```
+
+Start the app after restoring the database and any media:
+
+```sh
 docker compose --env-file .env --env-file .release.env up -d --wait
 ```
 

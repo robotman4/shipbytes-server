@@ -1,5 +1,56 @@
 {
   "$defs": {
+    "PublicationImage": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "alt": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Alt",
+          "type": "string"
+        },
+        "credit": {
+          "default": "",
+          "maxLength": 300,
+          "title": "Credit",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "const": "",
+              "type": "string"
+            }
+          ],
+          "default": "",
+          "title": "Source Url"
+        },
+        "usage": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Usage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "alt"
+      ],
+      "title": "PublicationImage",
+      "type": "object"
+    },
     "StoryInput": {
       "additionalProperties": false,
       "properties": {
@@ -125,6 +176,17 @@
       "minItems": 1,
       "title": "Stories",
       "type": "array"
+    },
+    "image": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PublicationImage"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "schema_version": {
       "const": 1,
