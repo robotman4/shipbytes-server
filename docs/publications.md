@@ -125,6 +125,7 @@ assets/2026/2026-09-15/cover.jpg
 ```json
 "image": {
   "path": "assets/2026/2026-09-15/cover.jpg",
+  "type": "source",
   "alt": "A factual description of the image",
   "credit": "Photographer or image provider",
   "source_url": "https://example.com/media",
@@ -132,12 +133,14 @@ assets/2026/2026-09-15/cover.jpg
 }
 ```
 
-`path` and `alt` are required when `image` is present. Paths are relative to the repository root and must stay under `assets/`. Credit, original source URL and usage notes are optional metadata; include them for externally sourced images. Image selection and permission checks belong to content preparation. Publishing does not fetch remote images or generate illustrations.
+`path`, `type` and `alt` are required when `image` is present. Paths are relative to the repository root and must stay under `assets/`. `type` is one of `generated`, `licensed`, `source`, or `own`. For `source`, a valid HTTP(S) `source_url` and nonempty `usage` are required. `source_url` may be `null` for the other types. Generated images default credit to `Ship Bytes` and usage to `generated`; extra attribution is optional. Image selection and permission checks belong to content preparation. Publishing does not fetch remote images or generate illustrations.
 
-The importer accepts nonanimated JPEG, PNG and WebP images up to 4 MB and 4 million pixels. It fits them within a white 1200 × 630 cover without cropping, creates a 600 × 315 thumbnail, and saves compressed JPEGs up to 250 KB each. Embedded source metadata is omitted from the rendered files. Files are stored atomically under content-derived names in `/data/media`, independent of subsequent Git resets, with attribution stored in SQLite. Existing published issues and existing Broadcasts are never changed by editing Git assets.
+The importer accepts nonanimated JPEG, PNG and WebP images up to 2 MB (2,097,152 bytes) and 4 million pixels. It fits them within a white 1200 × 630 cover without cropping, creates a 600 × 315 thumbnail, and saves compressed JPEGs up to 250 KB each. Embedded source metadata is omitted from the rendered files. The preferred input ratio is 1.91:1. Other ratios are fitted with white padding rather than cropped. The approved original is copied to `/data/media/issues/{slug}/source.{extension}`. Derivatives are stored atomically at `/data/media/issues/{slug}/cover-1200.jpg` and `cover-600.jpg`, served at the corresponding `/media/issues/{slug}/` URLs. Attribution and type are stored in SQLite. The original and derivatives survive subsequent Git resets. Existing published issues and existing Broadcasts are never changed by editing Git assets.
 
 Missing, unreadable, corrupt, animated, oversized or symlinked optional images produce a logged warning and use the Ship Bytes default. Invalid image metadata (such as path traversal or a malformed source URL) remains a schema validation error. Storage failures stop publication. Images remain optional, including for API-created issues, which currently use the default.
 
 The supplied logo/default cover is preserved unchanged at `shipbytes/static/brand/shipbytes-default.jpg`, served at `/static/brand/shipbytes-default.jpg`. It also appears in the site header. Custom issue covers appear on the homepage, archive, issue page, social sharing metadata and future HTML newsletters. The plain-text newsletter stays text-only.
 
 The media directory defaults to `media` beside the SQLite database, so production uses the existing `/data` volume. `MEDIA_DIRECTORY` can override this for development. Include `/data/media` in backups and restore it alongside SQLite; Git alone is not a backup of historically published media.
+
+Newsletters use `cover-600.jpg`; `og:image` uses `cover-1200.jpg`. This is one cover per issue. Story entries remain text-only. The 06:00 publisher never fetches or generates artwork: commit the final approved image with the issue JSON. Only local validation, copying, resizing and publication run on the VM.

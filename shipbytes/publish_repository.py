@@ -122,15 +122,16 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
                     issue.source_git_sha = sha
                     issue.source_content_hash = digest
                     issue.publication_date = datetime.combine(content.published_date, time())
-                    for field in ('image_file', 'image_thumbnail', 'image_alt', 'image_credit', 'image_source_url', 'image_usage'):
+                    for field in ('image_file', 'image_thumbnail', 'image_type', 'image_alt', 'image_credit', 'image_source_url', 'image_usage'):
                         setattr(issue, field, None)
                     if content.image:
-                        stored = store_image(root, content.image, config)
+                        stored = store_image(root, content.image, config, content.slug)
                         if stored:
                             issue.image_file, issue.image_thumbnail = stored
+                            issue.image_type = content.image.type
                             issue.image_alt = content.image.alt
                             issue.image_credit = content.image.credit
-                            issue.image_source_url = str(content.image.source_url)
+                            issue.image_source_url = str(content.image.source_url) if content.image.source_url else None
                             issue.image_usage = content.image.usage
                         else:
                             log(f'issue {content.slug}: optional image unavailable or invalid; using Ship Bytes default')

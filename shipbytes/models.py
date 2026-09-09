@@ -29,6 +29,7 @@ class Issue(Timestamps, Base):
     resend_broadcast_id: Mapped[str | None]
     image_file: Mapped[str | None]
     image_thumbnail: Mapped[str | None]
+    image_type: Mapped[str | None]
     image_alt: Mapped[str | None]
     image_credit: Mapped[str | None]
     image_source_url: Mapped[str | None]

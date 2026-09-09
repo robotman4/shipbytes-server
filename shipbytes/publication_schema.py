@@ -2,16 +2,26 @@
 from datetime import date
 from typing import Literal
 from pathlib import PurePosixPath
-from pydantic import BaseModel, ConfigDict, HttpUrl, Field, field_validator
+from pydantic import BaseModel, ConfigDict, HttpUrl, Field, field_validator, model_validator
 from .schemas import IssueInput, StoryInput
 
 class PublicationImage(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     path: str = Field(min_length=1, max_length=300)
+    type: Literal['generated', 'licensed', 'source', 'own']
     alt: str = Field(min_length=1, max_length=500)
     credit: str = Field(default='', max_length=300)
-    source_url: HttpUrl | Literal[''] = ''
+    source_url: HttpUrl | None = None
     usage: str = Field(default='', max_length=1000)
+
+    @model_validator(mode='after')
+    def provenance(self):
+        if self.type == 'source' and (not self.source_url or not self.usage):
+            raise ValueError('Source images require source_url and usage')
+        if self.type == 'generated':
+            self.credit = self.credit or 'Ship Bytes'
+            self.usage = self.usage or 'generated'
+        return self
 
     @field_validator('path')
     @classmethod

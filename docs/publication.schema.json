@@ -9,6 +9,16 @@
           "title": "Path",
           "type": "string"
         },
+        "type": {
+          "enum": [
+            "generated",
+            "licensed",
+            "source",
+            "own"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
         "alt": {
           "maxLength": 500,
           "minLength": 1,
@@ -30,11 +40,10 @@
               "type": "string"
             },
             {
-              "const": "",
-              "type": "string"
+              "type": "null"
             }
           ],
-          "default": "",
+          "default": null,
           "title": "Source Url"
         },
         "usage": {
@@ -46,6 +55,7 @@
       },
       "required": [
         "path",
+        "type",
         "alt"
       ],
       "title": "PublicationImage",
