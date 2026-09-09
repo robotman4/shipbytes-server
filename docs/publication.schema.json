@@ -1,0 +1,150 @@
+{
+  "$defs": {
+    "StoryInput": {
+      "additionalProperties": false,
+      "properties": {
+        "slug": {
+          "maxLength": 120,
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "title": "Slug",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "byte": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Byte",
+          "type": "string"
+        },
+        "summary": {
+          "maxLength": 30000,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "why_it_matters": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Why It Matters",
+          "type": "string"
+        },
+        "source_name": {
+          "default": "",
+          "maxLength": 300,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "const": "",
+              "type": "string"
+            }
+          ],
+          "default": "",
+          "title": "Source Url"
+        },
+        "source_type": {
+          "default": "external",
+          "enum": [
+            "external",
+            "shipbytes"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        }
+      },
+      "required": [
+        "slug",
+        "title",
+        "byte",
+        "summary",
+        "why_it_matters"
+      ],
+      "title": "StoryInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "slug": {
+      "maxLength": 120,
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Slug",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "subject": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Subject",
+      "type": "string"
+    },
+    "intro": {
+      "default": "",
+      "maxLength": 5000,
+      "title": "Intro",
+      "type": "string"
+    },
+    "stories": {
+      "items": {
+        "$ref": "#/$defs/StoryInput"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Stories",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "published_date": {
+      "format": "date",
+      "title": "Published Date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "subject",
+    "stories",
+    "schema_version",
+    "published_date"
+  ],
+  "title": "RepositoryIssue",
+  "type": "object"
+}

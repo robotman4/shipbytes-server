@@ -1,0 +1,18 @@
+Ship Bytes
+Maritime tech news, one byte at a time.
+{{ issue.published_at.strftime('%B %d, %Y') }}
+
+{{ issue.intro }}
+{% for story in issue.stories %}
+{{ story.title }}
+
+{{ story.byte }}
+
+Why it matters: {{ story.why_it_matters }}
+
+{% if story.source_type == 'external' %}Read more: {{ config.site_url }}/stories/{{ story.slug }}
+Source ({{ story.source_name }}): {{ story.source_url }}{% else %}Read full story: {{ config.site_url }}/stories/{{ story.slug }}{% endif %}
+
+{% endfor %}
+Read online: {{ config.site_url }}/issues/{{ issue.slug }}
+Unsubscribe: {{ unsubscribe }}

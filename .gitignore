@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+*.db*
+.venv/
+__pycache__/
+.pytest_cache/
+dev-emails/
+backups/
+*.tar.gz

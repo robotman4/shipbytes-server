@@ -1,0 +1,9 @@
+*
+!requirements.txt
+!requirements-dev.txt
+!shipbytes/**
+!migrations/**
+!alembic.ini
+!tests/**
+
+!scripts/**

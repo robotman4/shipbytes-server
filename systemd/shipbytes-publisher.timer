@@ -1,0 +1,11 @@
+[Unit]
+Description=Ship Bytes Tuesday and Friday 06:00 Stockholm publication
+
+[Timer]
+OnCalendar=Tue,Fri *-*-* 06:00:00 Europe/Stockholm
+AccuracySec=1s
+Persistent=false
+Unit=shipbytes-publisher.service
+
+[Install]
+WantedBy=timers.target

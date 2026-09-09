@@ -1,0 +1,59 @@
+name: shipbytes
+services:
+  app:
+    image: ${SHIPBYTES_IMAGE:-shipbytes:latest}
+    container_name: shipbytes-app
+    env_file: .env
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 1.5
+    volumes:
+      - app_data:/data
+      - ${PUBLICATIONS_PATH:-/opt/shipbytes-publications}:/publications:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [internal]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    command: [uvicorn, 'shipbytes.main:create_app', --factory, --host, 0.0.0.0, --port, '8000', --workers, '1', --no-access-log, --proxy-headers, --forwarded-allow-ips, '172.30.80.2']
+  caddy:
+    image: caddy:2-alpine
+    container_name: shipbytes-caddy
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+    environment:
+      SITE_URL: ${SITE_URL:?Set SITE_URL}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      internal:
+        ipv4_address: 172.30.80.2
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:2019/config/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.30.80.0/24
+          ip_range: 172.30.80.128/25
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:

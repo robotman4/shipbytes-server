@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block title %}{{ issue.title }} · Ship Bytes{% endblock %}{% block content %}<p class="eyebrow">{{ issue.published_at.strftime('%B %d, %Y') }}</p><h1>{{ issue.title }}</h1><p class="intro">{{ issue.intro }}</p>{% for story in issue.stories %}{% include 'byte.html' %}{% endfor %}<a href="/issues">← All issues</a>{% endblock %}

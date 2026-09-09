@@ -1,0 +1,7 @@
+{$SITE_URL} {
+    encode zstd gzip
+    request_body {
+        max_size 256KB
+    }
+    reverse_proxy app:8000
+}
