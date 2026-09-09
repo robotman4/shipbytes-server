@@ -139,7 +139,7 @@ The importer accepts nonanimated JPEG, PNG and WebP images up to 2 MB (2,097,152
 
 Missing, unreadable, corrupt, animated, oversized or symlinked optional images produce a logged warning and use the Ship Bytes default. Invalid image metadata (such as path traversal or a malformed source URL) remains a schema validation error. Storage failures stop publication. Images remain optional, including for API-created issues, which currently use the default.
 
-The supplied logo/default cover is preserved unchanged at `shipbytes/static/brand/shipbytes-default.jpg`, served at `/static/brand/shipbytes-default.jpg`. It also appears in the site header. Custom issue covers appear on the homepage, archive, issue page, social sharing metadata and future HTML newsletters. The plain-text newsletter stays text-only.
+The supplied logo/default cover is preserved unchanged at `shipbytes/static/brand/shipbytes-default-transparent.png`, served at `/static/brand/shipbytes-default-transparent.png`. It also appears in the site header. Custom issue covers appear on the homepage, archive, issue page, social sharing metadata and future HTML newsletters. The plain-text newsletter stays text-only.
 
 The media directory defaults to `media` beside the SQLite database, so production uses the existing `/data` volume. `MEDIA_DIRECTORY` can override this for development. Include `/data/media` in backups and restore it alongside SQLite; Git alone is not a backup of historically published media.
 

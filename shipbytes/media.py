@@ -8,7 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy.engine import make_url
 
-DEFAULT_IMAGE = '/static/brand/shipbytes-default.jpg'
+DEFAULT_IMAGE = '/static/brand/shipbytes-default-transparent.png'
 
 def media_root(config):
     return Path(config.media_directory) if config.media_directory else Path(make_url(config.database_url).database).resolve().parent / 'media'
