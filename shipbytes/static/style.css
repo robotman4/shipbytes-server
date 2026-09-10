@@ -4,3 +4,12 @@
 
 .tagline span{display:inline-block}
 @media(max-width:550px){header{padding-top:14px;padding-bottom:14px}}
+
+@media(prefers-color-scheme:dark){
+  :root{color-scheme:dark;--ink:#e3ecf0;--muted:#a6b8c2;--paper:#101d27;--line:#354b58;--accent:#72d5cb}
+  input{background:#192d3a;color:var(--ink)}
+  input::placeholder{color:var(--muted);opacity:1}
+  button{background:var(--accent);color:#101d27;border-color:var(--accent)}
+  button:hover{background:#a1e8df}
+  .brand-logo{background:#faf9f5;border-radius:50%}
+}
