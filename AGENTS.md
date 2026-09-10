@@ -9,11 +9,11 @@ Brand:
 **Ship Bytes**
 *Maritime tech news, one byte at a time.*
 
-Initial production URL:
+Production URL:
 
-`https://shipbytes.felip.se`
+`https://shipbyt.es`
 
-The domain may later change to a dedicated Ship Bytes domain. Do not hardcode the hostname anywhere except default/example configuration.
+Keep the domain configurable. Do not hardcode the hostname anywhere except default/example configuration.
 
 The application must run entirely in Docker Compose on a small OCI Linux VM with approximately:
 
@@ -577,7 +577,7 @@ Example:
 {
   "status": "published",
   "issue": "2026-09-15",
-  "url": "https://shipbytes.felip.se/issues/2026-09-15",
+  "url": "https://shipbyt.es/issues/2026-09-15",
   "stories": 7,
   "broadcast_id": "..."
 }
@@ -627,7 +627,7 @@ Provide:
 Example:
 
 ```text
-SITE_URL=https://shipbytes.felip.se
+SITE_URL=https://shipbyt.es
 SITE_NAME=Ship Bytes
 
 DATABASE_URL=sqlite:////data/shipbytes.db
@@ -747,7 +747,7 @@ The deployment script should:
 7. run database migrations
 8. run `docker compose up -d`
 9. wait for health check
-10. request `https://shipbytes.felip.se/health`
+10. request `https://shipbyt.es/health`
 11. fail deployment if the health check does not succeed
 12. preserve the previous image for rollback
 
@@ -911,7 +911,7 @@ Do not invent subscribers, readership numbers or industry claims.
 
 The task is complete when:
 
-1. `https://shipbytes.felip.se` serves the Ship Bytes website over valid HTTPS.
+1. `https://shipbyt.es` serves the Ship Bytes website over valid HTTPS.
 2. A visitor can subscribe.
 3. The visitor receives a confirmation email.
 4. Confirming adds them to the Resend mailing list.
