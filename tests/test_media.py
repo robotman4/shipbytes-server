@@ -41,6 +41,12 @@ def test_image_persists_after_source_removed(setup,repository):
     page=setup[0].get('/issues/test-issue').text
     assert 'og:image' in page and 'An example test image' in page
     assert cover in page
+    response=setup[0].get('/stories/test-story')
+    assert response.status_code==200
+    assert f'<figure class="issue-cover"><img src="{cover}"' in response.text
+    assert 'alt="An example test image"' in response.text
+    assert '>Test artist</a>' in response.text
+    assert f'content="http://localhost:8000{cover}"' in response.text
 
 @pytest.mark.parametrize('kind',['missing','broken','oversized','symlink','pixels'])
 def test_bad_optional_image_uses_default(setup,repository,kind,tmp_path):
@@ -65,6 +71,9 @@ def test_default_for_existing_issue(setup,repository):
     run(setup,repository)
     for url in ('/','/issues','/issues/test-issue'):
         assert DEFAULT_IMAGE in setup[0].get(url).text
+    page=setup[0].get('/stories/test-story').text
+    assert f'<figure class="issue-cover"><img src="{DEFAULT_IMAGE}"' in page
+    assert 'alt="Ship Bytes maritime technology logo"' in page
     with setup[1].state.sessions() as db:
         assert DEFAULT_IMAGE in db.scalar(select(Issue)).newsletter_html
 
