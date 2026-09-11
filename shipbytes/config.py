@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
 from pydantic import model_validator
+from .assets import DEFAULT_DROPBOX_FOLDER
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -15,6 +16,9 @@ class Settings(BaseSettings):
     environment: Literal['development', 'production'] = 'development'
     email_directory: str = './dev-emails'
     media_directory: str = ''
+    dropbox_shared_folder_url: str = DEFAULT_DROPBOX_FOLDER
+    dropbox_app_key: str = ''
+    dropbox_app_secret: str = ''
     resend_api_key: str = ''
     resend_from_email: str = ''
     resend_from_name: str = 'Ship Bytes'

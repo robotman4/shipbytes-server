@@ -5,8 +5,13 @@ from pathlib import PurePosixPath
 from pydantic import BaseModel, ConfigDict, HttpUrl, Field, field_validator, model_validator
 from .schemas import IssueInput, StoryInput
 
+from .assets import folder_identity
+
 class PublicationImage(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    provider: Literal['repository', 'dropbox'] = 'repository'
+    shared_folder_url: HttpUrl | None = None
+    sha256: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
     path: str = Field(min_length=1, max_length=300)
     type: Literal['generated', 'licensed', 'source', 'own']
     alt: str = Field(min_length=1, max_length=500)
@@ -16,6 +21,12 @@ class PublicationImage(BaseModel):
 
     @model_validator(mode='after')
     def provenance(self):
+        if self.provider == 'dropbox':
+            if not self.shared_folder_url:
+                raise ValueError('Dropbox images require shared_folder_url')
+            folder_identity(self.shared_folder_url)
+        elif not self.path.startswith('assets/') or self.shared_folder_url:
+            raise ValueError('Repository images require assets/ paths and no shared_folder_url')
         if self.type == 'source' and (not self.source_url or not self.usage):
             raise ValueError('Source images require source_url and usage')
         if self.type == 'generated':
@@ -27,15 +38,18 @@ class PublicationImage(BaseModel):
     @classmethod
     def asset_path(cls, value):
         path = PurePosixPath(value)
-        if path.is_absolute() or '..' in path.parts or not value.startswith('assets/') or '\\' in value or path.suffix.lower() not in ('.jpg', '.jpeg', '.png', '.webp'):
-            raise ValueError('Image must reference a JPEG, PNG or WebP under assets/')
+        if path.is_absolute() or '..' in path.parts or ':' in value or '%' in value or any(part in ('', '.') for part in value.split('/')) or '\\' in value or path.suffix.lower() not in ('.jpg', '.jpeg', '.png', '.webp'):
+            raise ValueError('Image must reference a relative JPEG, PNG or WebP path')
         return value
+
+class RepositoryStory(StoryInput):
+    image: PublicationImage | None = None
 
 class RepositoryIssue(IssueInput):
     image: PublicationImage | None = None
     schema_version: Literal[1]
     published_date: date
-    stories: list[StoryInput] = Field(min_length=1, max_length=20)
+    stories: list[RepositoryStory] = Field(min_length=1, max_length=20)
 
     @field_validator('schema_version', mode='before')
     @classmethod

@@ -3,6 +3,43 @@
     "PublicationImage": {
       "additionalProperties": false,
       "properties": {
+        "provider": {
+          "default": "repository",
+          "enum": [
+            "repository",
+            "dropbox"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "shared_folder_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shared Folder Url"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
         "path": {
           "maxLength": 300,
           "minLength": 1,
@@ -61,7 +98,7 @@
       "title": "PublicationImage",
       "type": "object"
     },
-    "StoryInput": {
+    "RepositoryStory": {
       "additionalProperties": false,
       "properties": {
         "slug": {
@@ -138,6 +175,17 @@
           ],
           "default": null,
           "title": "Published At"
+        },
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicationImage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -147,7 +195,7 @@
         "summary",
         "why_it_matters"
       ],
-      "title": "StoryInput",
+      "title": "RepositoryStory",
       "type": "object"
     }
   },
@@ -180,7 +228,7 @@
     },
     "stories": {
       "items": {
-        "$ref": "#/$defs/StoryInput"
+        "$ref": "#/$defs/RepositoryStory"
       },
       "maxItems": 20,
       "minItems": 1,

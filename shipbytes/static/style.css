@@ -13,3 +13,5 @@
   button:hover{background:#a1e8df}
   .brand-logo{background:#faf9f5;border-radius:50%}
 }
+
+.story-preview{display:block;max-width:360px;margin:18px 0}.story-preview img{display:block;width:100%;height:auto;aspect-ratio:1200/630;object-fit:contain;background:white}

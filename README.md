@@ -181,3 +181,5 @@ Keep the application stopped during restoration. Do not overwrite a live databas
 ## Changing domain
 
 Update DNS, `SITE_URL` in the host `.env` and the deployment shell, and the Resend webhook URL, then redeploy. Update sender-domain verification only if changing the email sender. Existing emails retain their old links; keep the previous hostname redirecting to the new origin where possible. No application URLs embed the initial hostname.
+
+Issue covers and optional story images can be staged in the configured public Dropbox folder. Git holds their references, while the publisher downloads, validates and stores images under `/data/media`. See [image JSON, transport configuration and refresh behavior](docs/publications.md#issue-and-story-images). Old repository images remain supported.

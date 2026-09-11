@@ -17,7 +17,17 @@ class Subscriber(Timestamps, Base):
     confirmation_expires_at: Mapped[datetime | None]
     confirmed_at: Mapped[datetime | None]
 
-class Issue(Timestamps, Base):
+class ImageFields:
+    image_file: Mapped[str | None]
+    image_thumbnail: Mapped[str | None]
+    image_type: Mapped[str | None]
+    image_alt: Mapped[str | None]
+    image_credit: Mapped[str | None]
+    image_source_url: Mapped[str | None]
+    image_usage: Mapped[str | None]
+    image_reference: Mapped[str | None] = mapped_column(Text)
+
+class Issue(ImageFields, Timestamps, Base):
     __tablename__ = 'issues'
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(unique=True)
@@ -27,14 +37,6 @@ class Issue(Timestamps, Base):
     status: Mapped[str] = mapped_column(default='draft', index=True)
     published_at: Mapped[datetime | None]
     resend_broadcast_id: Mapped[str | None]
-    image_file: Mapped[str | None]
-    image_thumbnail: Mapped[str | None]
-    image_type: Mapped[str | None]
-    image_alt: Mapped[str | None]
-    image_credit: Mapped[str | None]
-    image_source_url: Mapped[str | None]
-    image_usage: Mapped[str | None]
-
     @property
     def cover_url(self):
         from .media import DEFAULT_IMAGE
@@ -57,7 +59,7 @@ class Issue(Timestamps, Base):
     newsletter_text: Mapped[str | None] = mapped_column(Text)
     stories: Mapped[list['Story']] = relationship(back_populates='issue', cascade='all, delete-orphan', order_by='Story.sort_order')
 
-class Story(Timestamps, Base):
+class Story(ImageFields, Timestamps, Base):
     __tablename__ = 'stories'
     id: Mapped[int] = mapped_column(primary_key=True)
     issue_id: Mapped[int] = mapped_column(ForeignKey('issues.id'), index=True)
@@ -72,6 +74,19 @@ class Story(Timestamps, Base):
     sort_order: Mapped[int] = mapped_column(default=0)
     published_at: Mapped[datetime | None]
     issue: Mapped[Issue] = relationship(back_populates='stories')
+
+    @property
+    def cover_url(self):
+        return self.image_file or self.issue.cover_url
+
+    @property
+    def thumbnail_url(self):
+        return self.image_thumbnail or self.issue.thumbnail_url
+
+    @property
+    def cover_alt(self):
+        return self.image_alt if self.image_file else self.issue.cover_alt
+
 
 class WebhookReceipt(Base):
     __tablename__ = 'webhook_receipts'

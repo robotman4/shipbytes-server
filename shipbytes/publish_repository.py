@@ -11,7 +11,8 @@ from sqlalchemy import select
 from .config import settings
 from .db import database
 from .mail import Mailer
-from .media import store_image
+from .media import store_image, media_root
+from .assets import AssetResolver, validate_folder
 from .models import Issue, Story
 from .publication_schema import RepositoryIssue
 from .publishing import publication_lock, publish_locked
@@ -72,10 +73,42 @@ def scan(root):
             raise ValueError(f'Invalid publication {relative}: {type(exc).__name__}') from None
     return sorted(records, key=lambda row: (row[0].published_date, row[0].slug))
 
-def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
+IMAGE_FIELDS = ('image_file', 'image_thumbnail', 'image_type', 'image_alt', 'image_credit', 'image_source_url', 'image_usage', 'image_reference')
+
+def prepare_image(root, spec, config, resolver, existing, slug, collection, refresh):
+    if spec is None:
+        # Missing metadata in old JSON must not clear existing published media.
+        return None
+    if spec.provider == 'dropbox':
+        validate_folder(spec.shared_folder_url, config.dropbox_shared_folder_url)
+    reference = spec.model_dump_json()
+    if not refresh and existing and existing.image_reference == reference:
+        paths = (existing.image_file, existing.image_thumbnail)
+        if all(path and path.startswith('/media/') and (media_root(config) / path.removeprefix('/media/')).is_file() for path in paths):
+            return {name: getattr(existing, name) for name in IMAGE_FIELDS}
+    stored = store_image(root, spec, config, slug, resolver=resolver, collection=collection)
+    if not stored:
+        log(f'{collection}/{slug}: optional repository image unavailable; using default')
+        return None if existing else {name: None for name in IMAGE_FIELDS}
+    return dict(image_file=stored[0], image_thumbnail=stored[1], image_type=spec.type,
+                image_alt=spec.alt, image_credit=spec.credit,
+                image_source_url=str(spec.source_url) if spec.source_url else None,
+                image_usage=spec.usage, image_reference=reference)
+
+def apply_image(record, values):
+    if values is not None:
+        for key, value in values.items():
+            setattr(record, key, value)
+
+
+def run_repository(root, sessions, config, mailer, git_sha=None, today=None, refresh_images=False):
     root = Path(root)
     with publication_lock(sessions):
         records = scan(root)
+        for content, _, _ in records:
+            for spec in [content.image, *(story.image for story in content.stories)]:
+                if spec and spec.provider == 'dropbox':
+                    validate_folder(spec.shared_folder_url, config.dropbox_shared_folder_url)
         sha = git_sha or checkout_sha(root)
         if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', sha):
             raise ValueError('Invalid source Git SHA')
@@ -86,6 +119,8 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
                 existing = db.scalar(select(Issue).where(Issue.slug == content.slug))
                 if existing:
                     if existing.status == 'published':
+                        if {story.slug for story in existing.stories} != {story.slug for story in content.stories}:
+                            raise ValueError('Cannot change story membership of a published issue')
                         continue
                     if existing.source_filename != filename:
                         raise ValueError(f'Issue slug conflicts with existing issue: {content.slug}')
@@ -95,6 +130,21 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
                     owner = db.scalar(select(Story).where(Story.slug == story.slug))
                     if owner and (not existing or owner.issue_id != existing.id):
                         raise ValueError(f'Story slug conflicts with database: {story.slug}')
+        # Resolve every required image before any provider send or DB image update.
+        resolver = AssetResolver(root, config)
+        prepared = {}
+        with sessions() as db:
+            for content, filename, digest in records:
+                if content.published_date > today:
+                    continue
+                existing = db.scalar(select(Issue).where(Issue.slug == content.slug))
+                if existing and existing.status != 'published' and existing.delivery_state != 'new':
+                    continue
+                old_stories = {story.slug: story for story in existing.stories} if existing else {}
+                prepared[content.slug] = (
+                    prepare_image(root, content.image, config, resolver, existing, content.slug, 'issues', refresh_images),
+                    {story.slug: prepare_image(root, story.image, config, resolver, old_stories.get(story.slug),
+                        story.slug, 'stories', refresh_images) for story in content.stories})
         published = skipped = deferred = 0
         for content, filename, digest in records:
             if content.published_date > today:
@@ -103,6 +153,11 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
             with sessions() as db:
                 issue = db.scalar(select(Issue).where(Issue.slug == content.slug))
                 if issue and issue.status == 'published':
+                    cover, images = prepared[content.slug]
+                    apply_image(issue, cover)
+                    for story in issue.stories:
+                        apply_image(story, images[story.slug])
+                    db.commit()
                     skipped += 1
                     log(f'issue {content.slug} already published; skipped')
                     continue
@@ -115,26 +170,17 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None):
                     issue.stories.clear()
                     db.flush()
                     for order, story in enumerate(content.stories):
-                        data = story.model_dump()
+                        data = story.model_dump(exclude={'image'})
                         data['source_url'] = str(story.source_url)
                         issue.stories.append(Story(**data, sort_order=order))
                     issue.source_filename = filename
                     issue.source_git_sha = sha
                     issue.source_content_hash = digest
                     issue.publication_date = datetime.combine(content.published_date, time())
-                    for field in ('image_file', 'image_thumbnail', 'image_type', 'image_alt', 'image_credit', 'image_source_url', 'image_usage'):
-                        setattr(issue, field, None)
-                    if content.image:
-                        stored = store_image(root, content.image, config, content.slug)
-                        if stored:
-                            issue.image_file, issue.image_thumbnail = stored
-                            issue.image_type = content.image.type
-                            issue.image_alt = content.image.alt
-                            issue.image_credit = content.image.credit
-                            issue.image_source_url = str(content.image.source_url) if content.image.source_url else None
-                            issue.image_usage = content.image.usage
-                        else:
-                            log(f'issue {content.slug}: optional image unavailable or invalid; using Ship Bytes default')
+                    cover, images = prepared[content.slug]
+                    apply_image(issue, cover)
+                    for story in issue.stories:
+                        apply_image(story, images[story.slug])
                 db.commit()
             log(f'publishing issue {content.slug}')
             result = publish_locked(sessions, config, mailer, content.slug)
@@ -148,12 +194,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('repository', type=Path)
     parser.add_argument('--git-sha', help='Commit of the host-synchronized checkout')
+    parser.add_argument('--refresh-images', action='store_true', help='Re-fetch images, including published issues, without resending published newsletters')
     args = parser.parse_args()
     try:
         config = settings()
         engine, sessions = database(config.database_url)
         try:
-            result = run_repository(args.repository, sessions, config, Mailer(config), args.git_sha)
+            result = run_repository(args.repository, sessions, config, Mailer(config), args.git_sha, refresh_images=args.refresh_images)
         finally:
             engine.dispose()
         print(json.dumps(result))
