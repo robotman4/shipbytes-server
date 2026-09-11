@@ -5,7 +5,7 @@ import pytest
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts/sync-and-publish.sh'
 
-@pytest.mark.parametrize('mode,attempts,sleeps,success', [('unchanged',2,1,True),('changed',1,0,True),('published',1,0,True),('giterror',0,0,False),('publisherror',1,0,False)])
+@pytest.mark.parametrize('mode,attempts,sleeps,success', [('unchanged',4,3,True),('changed',4,3,True),('late2',2,1,True),('late3',3,2,True),('late4',4,3,True),('published',1,0,True),('giterror',0,0,False),('publisherror',1,0,False)])
 def test_sync_retry_contract(tmp_path,mode,attempts,sleeps,success):
     bin=tmp_path/'bin'; bin.mkdir()
     (bin/'git').write_text('''#!/bin/bash
@@ -19,7 +19,8 @@ esac
     (bin/'docker').write_text('''#!/bin/bash
 echo attempt >> "$STATE/attempts"
 [[ "$MODE" != publisherror ]] || exit 1
-if [[ "$MODE" == published ]]; then echo '{"published":1}'; else echo '{"published":0}'; fi
+count=$(wc -l < "$STATE/attempts")
+if [[ "$MODE" == published || "$MODE" == "late$count" ]]; then echo '{"published":1}'; else echo '{"published":0}'; fi
 ''')
     (bin/'sleep').write_text('''#!/bin/bash
 [[ "$1" == 3600 ]] || exit 1

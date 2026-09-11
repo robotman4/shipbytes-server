@@ -21,16 +21,23 @@ publish_once() {
     git reset --hard origin/master >/dev/null
     after=$(git rev-parse HEAD)
     log "publications: local=$before remote=$after"
-    changed=0
-    if [[ "$before" != "$after" ]]; then changed=1; else log 'no new Git revision'; fi
+    if [[ "$before" == "$after" ]]; then log 'no new Git revision'; fi
     result=$(cd "$SHIPBYTES_DEPLOY_PATH" && docker compose --env-file .env --env-file .release.env exec -T --interactive=false app python -m shipbytes.publish_repository /publications --git-sha "$after")
     count=$(python3 -c 'import json,sys; value=json.load(sys.stdin)["published"]; assert type(value) is int and value>=0; print(value)' <<< "$result")
     published=$count
     log "published=$published"
 }
-publish_once
-if [[ "$changed" == 0 && "$published" == 0 ]]; then
-    log 'retrying once in 3600 seconds'
-    sleep 3600
+for attempt in 1 2 3 4; do
+    log "publication check $attempt/4"
     publish_once
-fi
+    if (( published > 0 )); then
+        log 'publication succeeded; no further checks this run'
+        break
+    fi
+    if (( attempt < 4 )); then
+        log 'nothing published; retrying in 3600 seconds'
+        sleep 3600
+    else
+        log 'four checks completed; no further retries'
+    fi
+done

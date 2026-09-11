@@ -9,6 +9,6 @@ User=ubuntu
 Environment=PUBLICATIONS_PATH=/opt/shipbytes-publications
 Environment=SHIPBYTES_DEPLOY_PATH=/home/ubuntu/docker/shipbytes
 ExecStart=/home/ubuntu/docker/shipbytes/scripts/sync-and-publish.sh
-TimeoutStartSec=90min
+TimeoutStartSec=4h
 StandardOutput=append:/var/log/shipbytes-publisher.log
 StandardError=append:/var/log/shipbytes-publisher.log

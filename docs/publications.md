@@ -74,11 +74,11 @@ The Compose configuration defaults `PUBLICATIONS_PATH` to `/opt/shipbytes-public
 
 The script acquires `flock`, refuses local changes, records HEAD, fetches `origin master`, and resets to `origin/master`. It always runs the idempotent publisher after a successful sync, even when SHA is unchanged. Git/network, JSON, database, rendering and Resend failures stop the run with a nonzero exit. They are never treated as “no changes.”
 
-After a successful first check, it waits exactly 3,600 seconds only if SHA did not change and no issue was published. It then fetches, resets and checks once more, and exits. A changed SHA with zero published issues (for example a README-only commit) does not trigger the extra check, matching the requested revision-based rule. All overdue eligible issues are considered, including earlier failed attempts. The retry does not loop indefinitely.
+After a successful check with zero published issues, it waits 3,600 seconds and checks again, up to four checks total. This applies even if Git changed (for example a README-only commit). It stops immediately after publishing one or more issues, or after the fourth check. All overdue eligible issues are considered, including earlier failed attempts. Errors still stop the run immediately with a nonzero exit; they do not trigger these no-content retries.
 
 ## Scheduling in Stockholm time
 
-ChatGPT content generation is expected Tuesday and Friday at 05:00 Europe/Stockholm. This feature does not configure the external ChatGPT generation task. Publication runs at 06:00, with the conditional second check at approximately 07:00.
+ChatGPT content generation is expected Tuesday and Friday at 05:00 Europe/Stockholm. This feature does not configure the external ChatGPT generation task. Publication runs at 06:00, with conditional checks at approximately 07:00, 08:00 and 09:00. The timer starts only at 06:00; the script handles the three hourly retries. Each wait starts after the preceding check completes, so times may drift slightly.
 
 For cron implementations that support `CRON_TZ` (such as Cronie), install this in the deployment user's crontab after ensuring they can append the log:
 
@@ -101,15 +101,15 @@ Adjust the example service's `User`, `ExecStart` and directory environment value
 sudo systemctl daemon-reload
 sudo systemctl enable --now shipbytes-publisher.timer
 systemctl list-timers shipbytes-publisher.timer
-# Manual execution, including the conditional one-hour wait:
+# Manual execution, including up to three conditional one-hour waits:
 sudo systemctl start --no-block shipbytes-publisher.service
 ```
 
-Use either cron or the timer, not both. The timer does not catch up missed runs at boot; the next run considers all overdue content. Logs append to `/var/log/shipbytes-publisher.log`. The oneshot service allows 90 minutes for both attempts and uses no persistent worker between runs. Rotate the log with the supplied `systemd/shipbytes-publisher.logrotate` configuration.
+Use either cron or the timer, not both. The timer does not catch up missed runs at boot; the next run considers all overdue content. Logs append to `/var/log/shipbytes-publisher.log`. The oneshot service allows four hours for all four attempts and uses no persistent worker between runs. Rotate the log with the supplied `systemd/shipbytes-publisher.logrotate` configuration.
 
 ## Verification
 
-Run `make test`. Tests block external networking and mock Resend. Coverage includes malformed and unsupported input, duplicate slugs, future issues, source validation, chronological order, successful import/publication, idempotency, concurrent publishers, safe retries, uncertain failures, rendering failure and the shell script's exact one-retry behavior. Fake `sleep` verifies a 3,600-second wait without delaying the suite.
+Run `make test`. Tests block external networking and mock Resend. Coverage includes malformed and unsupported input, duplicate slugs, future issues, source validation, chronological order, successful import/publication, idempotency, concurrent publishers, safe retries, uncertain failures, rendering failure and the shell script's bounded retries and early stopping after publication. Fake `sleep` verifies a 3,600-second wait without delaying the suite.
 
 Do not create a fake production issue to test the timer. An empty content checkout is a valid successful scan with zero publications. Use a real reviewed issue when the publication is ready to send.
 
