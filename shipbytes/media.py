@@ -48,18 +48,18 @@ def store_image(root, spec, config, issue_slug, *, resolver=None, collection="is
                     break
             variants.append((label, content))
     except AssetError:
-        if spec.provider == 'dropbox' or spec.sha256:
+        if spec.url or spec.sha256:
             raise
         return None
     except (OSError, ValueError, UnidentifiedImageError, Image.DecompressionBombError, Image.DecompressionBombWarning):
-        if spec.provider == 'dropbox' or spec.sha256:
+        if spec.url or spec.sha256:
             raise AssetError('Required image is unavailable, corrupt or unsupported') from None
         return None
     # Storage errors are actual publication failures, not invalid-image fallbacks.
     if collection not in ('issues', 'stories'):
         raise ValueError('Invalid media collection')
     suffix = f'{collection}/{issue_slug}'
-    if spec.provider == 'dropbox':
+    if spec.url:
         suffix += '/' + checksum
     directory = media_root(config) / suffix
     directory.mkdir(parents=True, exist_ok=True)

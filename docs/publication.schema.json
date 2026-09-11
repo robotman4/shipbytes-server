@@ -3,16 +3,7 @@
     "PublicationImage": {
       "additionalProperties": false,
       "properties": {
-        "provider": {
-          "default": "repository",
-          "enum": [
-            "repository",
-            "dropbox"
-          ],
-          "title": "Provider",
-          "type": "string"
-        },
-        "shared_folder_url": {
+        "url": {
           "anyOf": [
             {
               "format": "uri",
@@ -25,7 +16,7 @@
             }
           ],
           "default": null,
-          "title": "Shared Folder Url"
+          "title": "Url"
         },
         "sha256": {
           "anyOf": [
@@ -41,10 +32,18 @@
           "title": "Sha256"
         },
         "path": {
-          "maxLength": 300,
-          "minLength": 1,
-          "title": "Path",
-          "type": "string"
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
         },
         "type": {
           "enum": [
@@ -91,7 +90,6 @@
         }
       },
       "required": [
-        "path",
         "type",
         "alt"
       ],

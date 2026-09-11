@@ -5,14 +5,13 @@ from pathlib import PurePosixPath
 from pydantic import BaseModel, ConfigDict, HttpUrl, Field, field_validator, model_validator
 from .schemas import IssueInput, StoryInput
 
-from .assets import folder_identity
+from .assets import validate_url
 
 class PublicationImage(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
-    provider: Literal['repository', 'dropbox'] = 'repository'
-    shared_folder_url: HttpUrl | None = None
+    url: HttpUrl | None = None
     sha256: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
-    path: str = Field(min_length=1, max_length=300)
+    path: str | None = Field(default=None, min_length=1, max_length=300)
     type: Literal['generated', 'licensed', 'source', 'own']
     alt: str = Field(min_length=1, max_length=500)
     credit: str = Field(default='', max_length=300)
@@ -21,12 +20,12 @@ class PublicationImage(BaseModel):
 
     @model_validator(mode='after')
     def provenance(self):
-        if self.provider == 'dropbox':
-            if not self.shared_folder_url:
-                raise ValueError('Dropbox images require shared_folder_url')
-            folder_identity(self.shared_folder_url)
-        elif not self.path.startswith('assets/') or self.shared_folder_url:
-            raise ValueError('Repository images require assets/ paths and no shared_folder_url')
+        if bool(self.url) == bool(self.path):
+            raise ValueError('Image requires exactly one transport: url or legacy path')
+        if self.url:
+            validate_url(self.url)
+        elif not self.path.startswith('assets/'):
+            raise ValueError('Legacy repository images require assets/ paths')
         if self.type == 'source' and (not self.source_url or not self.usage):
             raise ValueError('Source images require source_url and usage')
         if self.type == 'generated':
@@ -37,6 +36,8 @@ class PublicationImage(BaseModel):
     @field_validator('path')
     @classmethod
     def asset_path(cls, value):
+        if value is None:
+            return value
         path = PurePosixPath(value)
         if path.is_absolute() or '..' in path.parts or ':' in value or '%' in value or any(part in ('', '.') for part in value.split('/')) or '\\' in value or path.suffix.lower() not in ('.jpg', '.jpeg', '.png', '.webp'):
             raise ValueError('Image must reference a relative JPEG, PNG or WebP path')

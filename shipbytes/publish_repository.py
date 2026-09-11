@@ -12,7 +12,8 @@ from .config import settings
 from .db import database
 from .mail import Mailer
 from .media import store_image, media_root
-from .assets import AssetResolver, validate_folder
+from .assets import AssetResolver, AssetError
+from urllib.parse import urlsplit
 from .models import Issue, Story
 from .publication_schema import RepositoryIssue
 from .publishing import publication_lock, publish_locked
@@ -79,14 +80,18 @@ def prepare_image(root, spec, config, resolver, existing, slug, collection, refr
     if spec is None:
         # Missing metadata in old JSON must not clear existing published media.
         return None
-    if spec.provider == 'dropbox':
-        validate_folder(spec.shared_folder_url, config.dropbox_shared_folder_url)
     reference = spec.model_dump_json()
     if not refresh and existing and existing.image_reference == reference:
         paths = (existing.image_file, existing.image_thumbnail)
         if all(path and path.startswith('/media/') and (media_root(config) / path.removeprefix('/media/')).is_file() for path in paths):
             return {name: getattr(existing, name) for name in IMAGE_FIELDS}
-    stored = store_image(root, spec, config, slug, resolver=resolver, collection=collection)
+    try:
+        stored = store_image(root, spec, config, slug, resolver=resolver, collection=collection)
+    except AssetError as error:
+        # Query strings may contain signed access tokens. Log only host and URL fingerprint.
+        origin = urlsplit(str(spec.url)).hostname if spec.url else 'repository'
+        fingerprint = hashlib.sha256(str(spec.url or spec.path).encode()).hexdigest()[:12]
+        raise AssetError(f'{collection}/{slug} image host={origin} ref={fingerprint}: {error}') from None
     if not stored:
         log(f'{collection}/{slug}: optional repository image unavailable; using default')
         return None if existing else {name: None for name in IMAGE_FIELDS}
@@ -105,10 +110,6 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None, ref
     root = Path(root)
     with publication_lock(sessions):
         records = scan(root)
-        for content, _, _ in records:
-            for spec in [content.image, *(story.image for story in content.stories)]:
-                if spec and spec.provider == 'dropbox':
-                    validate_folder(spec.shared_folder_url, config.dropbox_shared_folder_url)
         sha = git_sha or checkout_sha(root)
         if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', sha):
             raise ValueError('Invalid source Git SHA')
@@ -141,10 +142,13 @@ def run_repository(root, sessions, config, mailer, git_sha=None, today=None, ref
                 if existing and existing.status != 'published' and existing.delivery_state != 'new':
                     continue
                 old_stories = {story.slug: story for story in existing.stories} if existing else {}
-                prepared[content.slug] = (
-                    prepare_image(root, content.image, config, resolver, existing, content.slug, 'issues', refresh_images),
-                    {story.slug: prepare_image(root, story.image, config, resolver, old_stories.get(story.slug),
-                        story.slug, 'stories', refresh_images) for story in content.stories})
+                try:
+                    prepared[content.slug] = (
+                        prepare_image(root, content.image, config, resolver, existing, content.slug, 'issues', refresh_images),
+                        {story.slug: prepare_image(root, story.image, config, resolver, old_stories.get(story.slug),
+                            story.slug, 'stories', refresh_images) for story in content.stories})
+                except AssetError as error:
+                    raise AssetError(f'publication {content.slug}: {error}') from None
         published = skipped = deferred = 0
         for content, filename, digest in records:
             if content.published_date > today:
