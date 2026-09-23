@@ -185,3 +185,5 @@ Update DNS, `SITE_URL` in the host `.env` and the deployment shell, and the Rese
 Issue covers and optional story images can be referenced using public HTTP(S) `image.url` downloads. Git holds their metadata, while the publisher downloads, validates and stores images under `/data/media`. See [image JSON, transport configuration and refresh behavior](docs/publications.md#issue-and-story-images). Old repository images remain supported.
 
 The website uses a responsive editorial layout with a featured story, supporting Bytes and a compact subscription panel. Light/dark colors follow the device preference. Inter is self-hosted under `shipbytes/static/fonts` with its SIL Open Font License; reading and subscribing require no JavaScript or third-party font requests. Article text remains 20px.
+
+The header offers Auto, Dark, and Light color themes. Auto follows the device setting; an explicit choice is saved in browser local storage and applied before the page renders. Reading remains available without JavaScript, using the device theme.

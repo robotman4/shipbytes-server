@@ -7,13 +7,15 @@
 {% block social %}<meta property="og:image" content="{{ config.site_url }}/static/brand/shipbytes-default-transparent.png"><meta property="og:image:alt" content="Ship Bytes maritime technology logo">{% endblock %}
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/static/brand/favicon.ico" sizes="16x16 32x32 48x48 64x64"><link rel="icon" type="image/png" sizes="32x32" href="/static/brand/favicon-32.png"><link rel="apple-touch-icon" sizes="180x180" href="/static/brand/apple-touch-icon.png">
-<link rel="stylesheet" href="/static/style.css?v=0b8cf68e468e">
+<script src="/static/theme.js?v=1"></script>
+<link rel="stylesheet" href="/static/style.css?v=f26f2a9c7231">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header shell">
 <a class="wordmark" href="/" aria-label="Ship Bytes home">SHIP_BYTES<span class="dot">.</span></a>
 <nav aria-label="Main"><a class="nav-feed" href="/#latest">Feed</a><a href="/issues"{% if request.url.path == '/issues' %} aria-current="page"{% endif %}>Archive</a><a href="/about"{% if request.url.path == '/about' %} aria-current="page"{% endif %}>About</a><a class="nav-subscribe" href="/subscribe"{% if request.url.path == '/subscribe' %} aria-current="page"{% endif %}>Subscribe</a></nav>
+<div class="theme-switch" role="group" aria-label="Color theme" hidden><button type="button" data-theme-choice="auto" aria-pressed="true">Auto</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button></div>
 </header>
 <main id="main" class="shell {% block main_class %}reading-page{% endblock %}">{% block content %}{% endblock %}</main>
 <footer class="site-footer shell"><div class="footer-brand"><img class="brand-logo" src="/static/brand/shipbytes-default-transparent.png" alt="" width="48" height="48"><div><strong>Ship Bytes</strong><p>Maritime tech news, one byte at a time.</p></div></div><nav aria-label="Footer"><a href="/issues">Archive</a><a href="/about">About</a><a href="/privacy">Privacy</a></nav></footer>
