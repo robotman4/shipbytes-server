@@ -240,3 +240,22 @@ def test_privacy_origin_and_cross_site_rejection(setup):
     assert response.status_code == 403
     response = client.post('/subscribe', data={'email':'privacy@example.com', 'csrf':'非ASCII'})
     assert response.status_code == 403
+
+@pytest.mark.parametrize('count', [1, 2, 3, 5])
+def test_homepage_editorial_layout_preserves_story_links(setup, count):
+    client, _, mailer, _ = setup
+    stories = [{**PAYLOAD['stories'][0], 'slug': f'layout-story-{i}',
+                'title': f'Layout story {i}', 'byte': f'Useful byte number {i}.'}
+               for i in range(count)]
+    assert create(client, {**PAYLOAD, 'stories': stories}).status_code == 201
+    assert publish(client).status_code == 200
+    page = client.get('/').text
+    assert page.count('class="feature-story"') == 1
+    assert page.count('class="supporting-story"') == min(count - 1, 2)
+    for story in stories:
+        assert page.count(story['byte']) == 1
+        assert f'href="/stories/{story["slug"]}"' in page
+    assert page.count('Source: Primary source') == count
+    assert 'action="/subscribe" method="post"' in page
+    assert 'name="csrf"' in page
+    mailer.send_broadcast.assert_called_once()

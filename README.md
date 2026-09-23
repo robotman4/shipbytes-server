@@ -183,3 +183,5 @@ Keep the application stopped during restoration. Do not overwrite a live databas
 Update DNS, `SITE_URL` in the host `.env` and the deployment shell, and the Resend webhook URL, then redeploy. Update sender-domain verification only if changing the email sender. Existing emails retain their old links; keep the previous hostname redirecting to the new origin where possible. No application URLs embed the initial hostname.
 
 Issue covers and optional story images can be referenced using public HTTP(S) `image.url` downloads. Git holds their metadata, while the publisher downloads, validates and stores images under `/data/media`. See [image JSON, transport configuration and refresh behavior](docs/publications.md#issue-and-story-images). Old repository images remain supported.
+
+The website uses a responsive editorial layout with a featured story, supporting Bytes and a compact subscription panel. Light/dark colors follow the device preference. Inter is self-hosted under `shipbytes/static/fonts` with its SIL Open Font License; reading and subscribing require no JavaScript or third-party font requests. Article text remains 20px.
